@@ -5,10 +5,17 @@ const BadReqError = require('../errors/BadReqError');
 const UnauthorizedError = require('../errors/UnauthorizedError');
 const NotFoundError = require('../errors/NotFoundError');
 const ConflictError = require('../errors/ConflictError');
+const {
+  VALIDATION_ERROR,
+  NOT_FOUND_ERROR,
+  MONGO_ERROR,
+  NOT_AUTH_ERROR_EMAIL_PASSWORD,
+  BAD_REQ_ERROR,
+  USER_EMAIL_ERROR,
+  NOT_USER_ERROR,
+} = require('../utils/constants');
 
-require('dotenv').config();
-
-const { NODE_ENV, JWT_SECRET } = process.env;
+const secretJwt = require('../utils/secretJwt');
 
 module.exports.getUsers = (req, res, next) => {
   const owner = req.user._id;
@@ -24,13 +31,15 @@ module.exports.updateUser = (req, res, next) => {
     { email, name },
     { new: true, runValidators: true },
   )
-    .orFail(new Error('NotFound'))
+    .orFail(new Error(NOT_FOUND_ERROR))
     .then((user) => res.status(200).send(user))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new BadReqError('Переданы некорректные данные при обновлении профиля'));
-      } else if (err.message === 'NotFound') {
-        next(new NotFoundError('Пользователя несуществует'));
+      if (err.name === VALIDATION_ERROR) {
+        next(new BadReqError(BAD_REQ_ERROR));
+      } else if (err.message === NOT_FOUND_ERROR) {
+        next(new NotFoundError(NOT_USER_ERROR));
+      } else {
+        next(err);
       }
     })
     .catch(next);
@@ -43,7 +52,7 @@ module.exports.createUser = (req, res, next) => {
   User.findOne({ email })
     .then((userEmail) => {
       if (userEmail) {
-        next(new ConflictError(`Пользователь с таким ${email} уже существует`));
+        next(new ConflictError(USER_EMAIL_ERROR));
       } else {
         bcrypt.hash(password, 10)
           .then((hash) => User.create({
@@ -53,10 +62,12 @@ module.exports.createUser = (req, res, next) => {
           }))
           .then((user) => res.status(200).send(user.toJSON()))
           .catch((err) => {
-            if (err.name === 'ValidationError') {
-              next(new BadReqError('Ошибка валидации'));
-            } else if (err.name === 'MongoError' && err.code === 11000) {
-              next(new ConflictError('Пользователь с таким email уже существует'));
+            if (err.name === VALIDATION_ERROR) {
+              next(new BadReqError(BAD_REQ_ERROR));
+            } else if (err.name === MONGO_ERROR && err.code === 11000) {
+              next(new ConflictError(USER_EMAIL_ERROR));
+            } else {
+              next(err);
             }
           })
           .catch(next);
@@ -70,7 +81,7 @@ module.exports.login = (req, res, next) => {
     .then((user) => {
       const token = jwt.sign(
         { _id: user._id },
-        NODE_ENV === 'production' ? JWT_SECRET : 'super-strong-secret',
+        secretJwt,
         { expiresIn: '7d' },
       );
       res.cookie('jwt', token, {
@@ -79,7 +90,7 @@ module.exports.login = (req, res, next) => {
       }).send({ token });
     })
     .catch(() => {
-      throw new UnauthorizedError('Необходимо авторизоваться');
+      throw new UnauthorizedError(NOT_AUTH_ERROR_EMAIL_PASSWORD);
     })
     .catch(next);
 };

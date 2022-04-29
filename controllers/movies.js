@@ -2,6 +2,15 @@ const Movie = require('../models/movie');
 const BadReqError = require('../errors/BadReqError');
 const ForbiddenError = require('../errors/ForbiddenError');
 const NotFoundError = require('../errors/NotFoundError');
+const ConflictError = require('../errors/ConflictError');
+
+const {
+  VALIDATION_ERROR,
+  OBJECT_ID,
+  NOT_FOUND_MOVIE_ERROR,
+  FORBIDDEN_MOVIE_ERROR,
+  BAD_ID_ERROR,
+} = require('../utils/constants');
 
 module.exports.getMovies = (req, res, next) => {
   const owner = req.user._id;
@@ -13,23 +22,16 @@ module.exports.getMovies = (req, res, next) => {
 };
 // Создать фильм.
 module.exports.createMovie = (req, res, next) => {
-  Movie.create({
-    country: req.body.country,
-    director: req.body.director,
-    duration: req.body.duration,
-    year: req.body.year,
-    description: req.body.description,
-    image: req.body.image,
-    trailerLink: req.body.trailerLink,
-    thumbnail: req.body.thumbnail,
-    movieId: req.movie._id,
-    nameRU: req.body.nameRU,
-    nameEN: req.body.nameEN,
-  })
+  const owner = req.user._id;
+  Movie.create({ owner, ...req.body })
     .then((movie) => res.status(200).send(movie))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new BadReqError('Ошибка при валидации'));
+      if (err.name === VALIDATION_ERROR) {
+        next(new BadReqError(err.message));
+      } else if (err.code === 11000) {
+        throw new ConflictError(err.message);
+      } else {
+        next(err);
       }
     })
     .catch((err) => {
@@ -38,25 +40,19 @@ module.exports.createMovie = (req, res, next) => {
 };
 // Удолить фильм.
 module.exports.deleteMovie = (req, res, next) => {
-  const { movieId } = req.params;
-  Movie.findById(movieId)
-    .orFail(new Error('NotFound'))
+  Movie.findById(req.params.movieId)
+    .orFail(new NotFoundError(NOT_FOUND_MOVIE_ERROR))
     .then((movie) => {
-      if (req.user._id !== movie.owner.toString()) {
-        next(new ForbiddenError('Нельзя удалить чужую карточку'));
-      } else {
-        Movie.deleteOne(movie)
-          .then((deletedMovie) => res.status(200).send({ message: `Карточка ${deletedMovie.id} успешно удалена` }));
+      if (req.user._id === movie.owner.toString()) {
+        return movie.remove()
+          .then(() => res.status(200).send({ message: 'Фильм удалён успешно' }));
       }
+      throw new ForbiddenError(FORBIDDEN_MOVIE_ERROR);
     })
     .catch((err) => {
-      if (err.name === 'CastError') {
-        next(new BadReqError('Передан некоректный "id"'));
-      } else if (err.message === 'NotFound') {
-        next(new NotFoundError('Карточка с данным "id" не существует'));
+      if (err.kind === OBJECT_ID) {
+        next(new BadReqError(BAD_ID_ERROR));
       }
-    })
-    .catch((err) => {
       next(err);
     });
 };

@@ -1,12 +1,14 @@
 const { celebrate, Joi } = require('celebrate');
 const validator = require('validator');
 
+const { BAD_URL } = require('../utils/constants');
+
 const isUrl = (v) => {
   const url = validator.isURL(v, { require_protocol: true });
   if (url) {
     return v;
   }
-  throw new Error('Неверный формат ссылки');
+  throw new Error(BAD_URL);
 };
 
 module.exports.validateSingUp = celebrate({

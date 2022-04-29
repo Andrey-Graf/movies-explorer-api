@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const { NOT_FOUND_ERROR_MESSAGE } = require('../utils/constants');
 
 const { validateSingUp, validateSignIn } = require('../middlewares/validators');
 const { login, createUser, signOut } = require('../controllers/users');
@@ -11,11 +12,11 @@ router.post('/signin', validateSignIn, login);
 router.post('/signup', validateSingUp, createUser);
 router.post('/signout', signOut);
 
-router.use('/users', auth, userRouter);
-router.use('/movies', auth, movieRouter);
+router.use(auth, userRouter);
+router.use(auth, movieRouter);
 
 router.use('*', (req, res, next) => {
-  next(new NotFoundError('Запршиваемый ресурс не найден'));
+  next(new NotFoundError(NOT_FOUND_ERROR_MESSAGE));
 });
 
 module.exports = router;

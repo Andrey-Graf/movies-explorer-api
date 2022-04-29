@@ -9,25 +9,27 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const { errors } = require('celebrate');
 const cookieParser = require('cookie-parser');
+const {
+  PORT_NUMB,
+  MONGO_DB,
+  ALLOWED_CORS,
+} = require('./utils/constants');
 
+const rateLimit = require('./middlewares/rateLimit');
 const router = require('./routes/index');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
 const errorHander = require('./middlewares/errorHander');
 
-const { PORT = 3000 } = process.env;
+const { PORT = PORT_NUMB } = process.env;
 const app = express();
 
-mongoose.connect('mongodb://localhost:27017/moviesdb', {
+mongoose.connect(MONGO_DB, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
 app.use(cors({
-  origin: [
-    'https://movies.alebedev.nomoredomains.work',
-    'http://movies.alebedev.nomoredomains.work',
-    'http://localhost:3000',
-  ],
+  origin: ALLOWED_CORS,
   methods: ['GET', 'PUT', 'POST', 'PATCH', 'DELETE'],
   allowedHeaders: ['Authorization', 'Content-Type'],
   credentials: true,
@@ -39,6 +41,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.use(requestLogger);
+
+app.use(rateLimit);
 
 app.get('/crash-test', () => {
   setTimeout(() => {
