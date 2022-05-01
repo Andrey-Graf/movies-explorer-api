@@ -3,7 +3,6 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const BadReqError = require('../errors/BadReqError');
 const UnauthorizedError = require('../errors/UnauthorizedError');
-const NotFoundError = require('../errors/NotFoundError');
 const ConflictError = require('../errors/ConflictError');
 const {
   VALIDATION_ERROR,
@@ -12,10 +11,9 @@ const {
   NOT_AUTH_ERROR_EMAIL_PASSWORD,
   BAD_REQ_ERROR,
   USER_EMAIL_ERROR,
-  NOT_USER_ERROR,
 } = require('../utils/constants');
 
-const secretJwt = require('../utils/secretJwt');
+const { JWT_SECRET } = require('../utils/secretJwt');
 
 module.exports.getUsers = (req, res, next) => {
   const owner = req.user._id;
@@ -36,8 +34,8 @@ module.exports.updateUser = (req, res, next) => {
     .catch((err) => {
       if (err.name === VALIDATION_ERROR) {
         next(new BadReqError(BAD_REQ_ERROR));
-      } else if (err.message === NOT_FOUND_ERROR) {
-        next(new NotFoundError(NOT_USER_ERROR));
+      } else if (err.name === MONGO_ERROR && err.code === 11000) {
+        next(new ConflictError(err.message));
       } else {
         next(err);
       }
@@ -72,7 +70,8 @@ module.exports.createUser = (req, res, next) => {
           })
           .catch(next);
       }
-    });
+    })
+    .catch(next);
 };
 
 module.exports.login = (req, res, next) => {
@@ -81,7 +80,7 @@ module.exports.login = (req, res, next) => {
     .then((user) => {
       const token = jwt.sign(
         { _id: user._id },
-        secretJwt,
+        JWT_SECRET,
         { expiresIn: '7d' },
       );
       res.cookie('jwt', token, {

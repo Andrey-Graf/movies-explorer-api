@@ -11,10 +11,10 @@ const { errors } = require('celebrate');
 const cookieParser = require('cookie-parser');
 const {
   PORT_NUMB,
-  MONGO_DB,
   ALLOWED_CORS,
 } = require('./utils/constants');
 
+const { MONGO_DB } = require('./utils/secretJwt');
 const rateLimit = require('./middlewares/rateLimit');
 const router = require('./routes/index');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
