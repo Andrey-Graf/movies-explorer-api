@@ -1,5 +1,4 @@
 const PORT_NUMB = 3000;
-const MONGO_DB = 'mongodb://localhost:27017/moviesdb';
 const ALLOWED_CORS = [
   'https://movies.alebedev.nomoredomains.work',
   'http://movies.alebedev.nomoredomains.work',
@@ -15,6 +14,7 @@ const NOT_AUTH_ERROR_EMAIL_PASSWORD = 'Неправильные почта ил�
 const BAD_REQ_ERROR = 'Ошибка валидации';
 const USER_EMAIL_ERROR = 'Пользователь с таким email уже существует';
 const NOT_USER_ERROR = 'Пользователя несуществует';
+const SERVER_ERROR = 'Ошибка сервера';
 const VALIDATION_ERROR = 'ValidationError';
 const NOT_FOUND_ERROR = 'NotFound';
 const OBJECT_ID = 'ObjectId';
@@ -50,7 +50,6 @@ const MOVIE_SCHEMA_REQUIRED = {
 
 module.exports = {
   PORT_NUMB,
-  MONGO_DB,
   ALLOWED_CORS,
   NOT_FOUND_ERROR_MESSAGE,
   BAD_URL,
@@ -62,6 +61,7 @@ module.exports = {
   BAD_REQ_ERROR,
   USER_EMAIL_ERROR,
   NOT_USER_ERROR,
+  SERVER_ERROR,
   VALIDATION_ERROR,
   NOT_FOUND_ERROR,
   OBJECT_ID,
