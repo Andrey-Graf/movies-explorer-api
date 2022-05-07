@@ -35,4 +35,4 @@
 #### **Ссылка на проект**
 ---
 * Server: https://api.movies.alebedev.nomoredomains.work
-* Public IP: 51.250.83.152
+* Public IP: 51.250.77.133
